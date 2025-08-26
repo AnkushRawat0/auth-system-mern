@@ -14,7 +14,7 @@ const AdminPage = () => <h1>Admin Page(Protected - Admin Only)</h1>
 
 const AppRoutes : React.FC=()=>{
     const isAuthenticated = false;
-    const userRole = 'user';
+    const userRole : string | null = null;
 
     return (
         <Routes>
