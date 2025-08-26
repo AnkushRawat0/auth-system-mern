@@ -3,6 +3,7 @@ import {useForm ,type SubmitHandler} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod" 
 import {Link} from "react-router-dom"
+import { useAuth } from '../context/AuthContext';
 
 
 //defining zod schema for login form
@@ -17,6 +18,9 @@ type LoginFormInputs = z.infer<typeof loginSchema>
 
 
 const LoginPage : React.FC =() =>{
+    const { login } = useAuth(); // Use the useAuth hook
+
+
     const {
         register,
         handleSubmit,
@@ -26,10 +30,14 @@ const LoginPage : React.FC =() =>{
 
     })
 
-    const onSubmit : SubmitHandler<LoginFormInputs> = (data)=>{
-        console.log(data);
-        //here we send data to backend for authentication
+    const onSubmit : SubmitHandler<LoginFormInputs> = async(data)=>{
+       try{
+        await login(data.email,data.password);
+       }catch(error){
+        console.error("login failed", error);
+        alert("login failed please check your credentials")
         
+       }
     };
     return (
         <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>

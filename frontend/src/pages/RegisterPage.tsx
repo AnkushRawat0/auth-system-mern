@@ -3,6 +3,7 @@ import { useForm , type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Link } from "react-router-dom";
+import { useAuth } from '../context/AuthContext';
 
 
 //defined zod schema for register form
@@ -25,6 +26,8 @@ type RegisterFormInputs = z.infer<typeof registerSchema>
 
 
 const RegisterPage :React.FC = () =>{
+    const { register: authRegister } = useAuth();
+
     const {
         register ,
         handleSubmit,
@@ -36,8 +39,14 @@ const RegisterPage :React.FC = () =>{
         },
     });
 
-    const onSubmit: SubmitHandler<RegisterFormInputs> = (data)=>{
-        console.log(data);
+    const onSubmit: SubmitHandler<RegisterFormInputs> = async(data)=>{
+        try{
+            await authRegister(data.name , data.email , data.password , data.role);
+        }catch(error){
+         console.error("registration failed" , error);
+         alert("Registration failed. Please try again")
+         
+        }
         
     };
 
