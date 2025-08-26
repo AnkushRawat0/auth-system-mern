@@ -16,6 +16,11 @@ app.use(express.json());
 // Routes
 app.use("/api/auth", authRoutes);
 
+//Root Route 
+app.get("/" , (req,res)=>{
+    res.send("API is running ")
+})
+
 
 //error handler middleware 
 app.use((err,req,res,next)=>{
