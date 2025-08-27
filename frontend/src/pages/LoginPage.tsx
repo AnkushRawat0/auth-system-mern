@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod" 
 import {Link} from "react-router-dom"
 import { useAuth } from '../context/AuthContext';
+import '../styles/Forms.css'; // Import the new CSS file
 
 
 //defining zod schema for login form
@@ -40,35 +41,35 @@ const LoginPage : React.FC =() =>{
        }
     };
     return (
-        <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
-        <h2>Login</h2>
+        <div className="form-container"> {/* Use class name */} 
+        <h2 className="text-center">Login</h2> {/* Use class name */} 
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div style={{ marginBottom: '15px' }}>
-            <label htmlFor="email" style={{ display: 'block', marginBottom: '5px' }}>Email:</label>
+          <div className="form-group"> {/* Use class name */} 
+            <label htmlFor="email" className="form-label">Email:</label> {/* Use class name */} 
             <input
               type="email"
               id="email"
               {...register('email')} // Simplified register, validation now handled by Zod
-              style={{ width: '100%', padding: '8px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ddd' }}
+              className="form-input" // Use class name
             />
-            {errors.email && <p style={{ color: 'red', fontSize: '0.8em' }}>{errors.email.message}</p>}
+            {errors.email && <p className="error-message">{errors.email.message}</p>} {/* Use class name */} 
           </div>
   
-          <div style={{ marginBottom: '15px' }}>
-            <label htmlFor="password" style={{ display: 'block', marginBottom: '5px' }}>Password:</label>
+          <div className="form-group"> {/* Use class name */} 
+            <label htmlFor="password" className="form-label">Password:</label> {/* Use class name */} 
             <input
               type="password"
               id="password"
               {...register('password')} // Simplified register, validation now handled by Zod
-              style={{ width: '100%', padding: '8px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ddd' }}
+              className="form-input" // Use class name
             />
-            {errors.password && <p style={{ color: 'red', fontSize: '0.8em' }}>{errors.password.message}</p>}
+            {errors.password && <p className="error-message">{errors.password.message}</p>} {/* Use class name */} 
           </div>
-          <button type="submit" style={{ width: '100%', padding: '10px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+          <button type="submit" className="btn btn-primary"> {/* Use class names */} 
           Login
         </button>
       </form>
-      <p style={{ marginTop: '20px', textAlign: 'center' }}>
+      <p className="form-footer-text"> {/* Use class name */} 
         Don't have an account? <Link to="/register">Register</Link>
       </p>
     </div>

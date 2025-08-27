@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Link } from "react-router-dom";
 import { useAuth } from '../context/AuthContext';
+import '../styles/Forms.css'; // Import the new CSS file
 
 
 //defined zod schema for register form
@@ -51,73 +52,73 @@ const RegisterPage :React.FC = () =>{
     };
 
     return (
-        <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
-      <h2>Register</h2>
+        <div className="form-container"> {/* Use class name */} 
+      <h2 className="text-center">Register</h2> {/* Use class name */} 
       <form onSubmit={handleSubmit(onSubmit)}>
-        <div style={{ marginBottom: '15px' }}>
-          <label htmlFor="name" style={{ display: 'block', marginBottom: '5px' }}>Name:</label>
+        <div className="form-group"> {/* Use class name */} 
+          <label htmlFor="name" className="form-label">Name:</label> {/* Use class name */} 
           <input
             type="text"
             id="name"
             {...register('name')}
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ddd' }}
+            className="form-input" // Use class name
           />
-          {errors.name && <p style={{ color: 'red', fontSize: '0.8em' }}>{errors.name.message}</p>}
+          {errors.name && <p className="error-message">{errors.name.message}</p>} {/* Use class name */} 
         </div>
 
-        <div style={{ marginBottom: '15px' }}>
-          <label htmlFor="email" style={{ display: 'block', marginBottom: '5px' }}>Email:</label>
+        <div className="form-group"> {/* Use class name */} 
+          <label htmlFor="email" className="form-label">Email:</label> {/* Use class name */} 
           <input
             type="email"
             id="email"
             {...register('email')}
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ddd' }}
+            className="form-input" // Use class name
           />
-          {errors.email && <p style={{ color: 'red', fontSize: '0.8em' }}>{errors.email.message}</p>}
+          {errors.email && <p className="error-message">{errors.email.message}</p>} {/* Use class name */} 
         </div>
      
        
-        <div style={{ marginBottom: '15px' }}>
-          <label htmlFor="password" style={{ display: 'block', marginBottom: '5px' }}>Password:</label>
+        <div className="form-group"> {/* Use class name */} 
+          <label htmlFor="password" className="form-label">Password:</label> {/* Use class name */} 
           <input
             type="password"
             id="password"
             {...register('password')}
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ddd' }}
+            className="form-input" // Use class name
           />
-          {errors.password && <p style={{ color: 'red', fontSize: '0.8em' }}>{errors.password.message}</p>}
+          {errors.password && <p className="error-message">{errors.password.message}</p>} {/* Use class name */} 
         </div>
 
-        <div style={{ marginBottom: '15px' }}>
-          <label htmlFor="confirmPassword" style={{ display: 'block', marginBottom: '5px' }}>Confirm Password:</label>
+        <div className="form-group"> {/* Use class name */} 
+          <label htmlFor="confirmPassword" className="form-label">Confirm Password:</label> {/* Use class name */} 
           <input
             type="password"
             id="confirmPassword"
             {...register('confirmPassword')}
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ddd' }}
+            className="form-input" // Use class name
           />
-          {errors.confirmPassword && <p style={{ color: 'red', fontSize: '0.8em' }}>{errors.confirmPassword.message}</p>}
+          {errors.confirmPassword && <p className="error-message">{errors.confirmPassword.message}</p>} {/* Use class name */} 
         </div>
 
-        <div style={{ marginBottom: '15px' }}>
-          <label htmlFor="role" style={{ display: 'block', marginBottom: '5px' }}>Role:</label>
+        <div className="form-group"> {/* Use class name */} 
+          <label htmlFor="role" className="form-label">Role:</label> {/* Use class name */} 
           <select
             id="role"
             {...register('role')}
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ddd' }}
+            className="form-input" // Use class name
           >
             <option value="user">User</option>
             <option value="admin">Admin</option>
           </select>
-          {errors.role && <p style={{ color: 'red', fontSize: '0.8em' }}>{errors.role.message}</p>}
+          {errors.role && <p style={{ color: 'red', fontSize: '0.8em' }}>{errors.role.message}</p>} {/* Use class name */} 
         </div>
 
 
-        <button type="submit" style={{ width: '100%', padding: '10px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+        <button type="submit" className="btn btn-primary"> {/* Use class names */} 
           Register
         </button>
       </form>
-      <p style={{ marginTop: '20px', textAlign: 'center' }}>
+      <p className="form-footer-text"> {/* Use class name */} 
         Already have an account? <Link to="/login">Login</Link>
       </p>
     </div>

@@ -39,35 +39,40 @@ const AdminPage: React.FC = () => {
     }
   }, [token, user]);
 
+  let content;
+  if (loadingData) {
+    content = <p>Loading admin data...</p>;
+  } else if (errorData) {
+    content = <p className="error-message">Error: {errorData}</p>;
+  } else if (adminData) {
+    content = (
+      <>
+        <h2>Admin Data:</h2>
+        <p>{adminData?.message}</p>
+        {/* Render other admin-specific data here, e.g., a list of users */}
+        {adminData?.users && (
+          <>
+            <h3>User List:</h3>
+            <ul>
+              {adminData.users.map((u: any) => (
+                <li key={u._id}>{u.name} ({u.email}) - {u.role}</li>
+              ))}
+            </ul>
+          </>
+        )}
+      </>
+    );
+  } else {
+    content = <p>No admin data to display.</p>;
+  }
+
 
   return (
-    <div style={{ padding: '20px', textAlign: 'center' }}>
+    <div className="page-container text-center"> {/* Use page-container and text-center classes */} 
       <h1>Admin Page</h1>
       {user && <p>Welcome, Admin {user.name || user.email}!</p>}
 
-      {loadingData ? (
-        <p>Loading admin data...</p>
-      ) : errorData ? (
-        <p style={{ color: 'red' }}>Error: {errorData}</p>
-      ) : adminData ? (
-        <div>
-          <h2>Admin Data:</h2>
-          <p>{adminData.message}</p>
-          {/* Render other admin-specific data here, e.g., a list of users */}
-          {adminData.users && (
-            <div>
-              <h3>User List:</h3>
-              <ul>
-                {adminData.users.map((u: any) => (
-                  <li key={u._id}>{u.name} ({u.email}) - {u.role}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      ) : (
-        <p>No admin data to display.</p>
-      )}
+      {content}
 
       {/* Add more admin specific content here */}
     </div>

@@ -10,10 +10,6 @@ import AdminPage from './pages/AdminPage';
 import { useAuth } from './context/AuthContext';
 
 
-// Placeholder components for now
-// const HomePage = () => <h1>Home Page (Public)</h1>; // Remove the placeholder
-// const DashboardPage = () => <h1>Dashboard (Protected)</h1>; // Remove the placeholder
-// const AdminPage = () => <h1>Admin Page (Protected - Admin Only)</h1>; // Remove the placeholder
 
 
 const AppRoutes: React.FC = () => {
