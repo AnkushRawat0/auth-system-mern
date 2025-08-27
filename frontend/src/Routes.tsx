@@ -4,13 +4,16 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import HomePage from './pages/HomePage';
+import DashboardPage from './pages/DashboardPage'; // Import the new DashboardPage component
+import AdminPage from './pages/AdminPage'; // Import the new AdminPage component
 import { useAuth } from './context/AuthContext';
 
 
 // Placeholder components for now
-const HomePage = () => <h1>Home Page (Public)</h1>;
-const DashboardPage = () => <h1>Dashboard (Protected)</h1>;
-const AdminPage = () => <h1>Admin Page (Protected - Admin Only)</h1>;
+// const HomePage = () => <h1>Home Page (Public)</h1>; // Remove the placeholder
+// const DashboardPage = () => <h1>Dashboard (Protected)</h1>; // Remove the placeholder
+// const AdminPage = () => <h1>Admin Page (Protected - Admin Only)</h1>; // Remove the placeholder
 
 
 const AppRoutes: React.FC = () => {
