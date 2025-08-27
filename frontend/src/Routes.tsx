@@ -6,7 +6,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
-import AdminPage from './pages/AdminPage'; // Import the new AdminPage component
+import AdminPage from './pages/AdminPage';
 import { useAuth } from './context/AuthContext';
 
 
