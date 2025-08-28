@@ -2,11 +2,25 @@ import User from "../models/User.js";
 import bycrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import asynchandler from "express-async-handler";
+import crypto from "crypto"
 
 const generateToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: "1h" });
 };
 
+const generateRefreshToken =(res, token) =>{
+  return crypto.randomBytes(64).toString('hex') ;// generates the refresh token
+}
+
+
+const sendRefreshToken=(res,token)=>{
+  res.cookie('refreshToken' , token , {
+    httpOnly : true,
+    secure: process.env.NODE_ENV === "production", // uses secure cookie in pr0duction
+    sameSite: "strict" , 
+    maxAge : 7*24*60*60*1000, //7 days (your desired refresh token lifespan)
+  })
+}
 
 
 //Register user
@@ -31,6 +45,11 @@ export const registerUser = asynchandler(async (req, res) => {
   });
 
   if (user) {
+     const newRefreshToken = generateRefreshToken();
+     user.refreshToken =  newRefreshToken; //store refresh token in db
+     await user.save() ;  // saves the updated user with refresh token 
+
+
     res.status(201).json({
       _id: user._id,
       name: user.name,
