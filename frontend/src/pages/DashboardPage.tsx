@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import axios from "axios";
-
+import { axiosInstance } from "../context/AuthContext"; // Import axiosInstance
 
 interface ProtectedData{
     message:string;
@@ -19,7 +18,7 @@ const DashboardPage : React.FC = () =>{
         const fetchProtectedData = async() =>{
             try{
                 setLoadingData(true) ; 
-                const response = await axios.get("http://localhost:5000/api/auth/profile") ;
+                const response = await axiosInstance.get("/auth/profile") ; // Use axiosInstance
                 setProtectedData(response.data) ;
 
             }catch(error :any){

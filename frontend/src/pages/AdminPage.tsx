@@ -1,7 +1,7 @@
 // frontend/src/pages/AdminPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios'; // For fetching protected data
+import { axiosInstance } from "../context/AuthContext"; // Import axiosInstance
 
 interface AdminData {
   message: string;
@@ -20,7 +20,7 @@ const AdminPage: React.FC = () => {
         setLoadingData(true);
         // Example: Fetch data from a protected backend endpoint requiring admin role
         // This assumes you have a protected route like /api/admin on your backend
-        const response = await axios.get('http://localhost:5000/api/auth/admin'); // Using the example /admin route
+        const response = await axiosInstance.get('/auth/admin'); // Use axiosInstance
         setAdminData(response.data);
       } catch (error: any) {
         console.error('Failed to fetch admin data:', error);

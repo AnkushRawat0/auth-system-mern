@@ -1,6 +1,13 @@
-import React, { createContext, useState, useEffect, useContext, type ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useContext, type ReactNode, useCallback } from 'react'; // ADD useCallback
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+
+const axiosInstance = axios.create({
+  baseURL: 'http://localhost:5000/api',
+  withCredentials: true
+});
+
+export { axiosInstance }; // Export axiosInstance
 
 // Define the User type
 interface User {
@@ -32,21 +39,69 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Corrected spelling
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const navigate = useNavigate();
 
-  // Set default Axios headers for Authorization
-  useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUserData(token);
-    } else {
-      delete axios.defaults.headers.common['Authorization'];
-      setUser(null);
-      setIsLoading(false);
-    }
-  }, [token]);
+  // Ensure logout is stable, or it will cause infinite re-renders of the useEffect above
+  // We'll wrap it in useCallback for this purpose.
+  const logout = useCallback(() => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem('token');
+    // axiosInstance.defaults.headers.common['Authorization'] = ''; // No longer needed due to interceptor
+    navigate('/login');
+  }, [setToken, setUser, navigate]);
 
+  // Set up Axios interceptors
+  useEffect(() => {
+    // This interceptor adds the access token to outgoing requests
+    const requestInterceptor = axiosInstance.interceptors.request.use(
+      config => {
+        if (token && !config.headers.Authorization) { // Only set if token exists and not already set
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      error => Promise.reject(error)
+    );
+
+    // This interceptor handles 401 responses and attempts to refresh the token
+    const responseInterceptor = axiosInstance.interceptors.response.use(
+      response => response,
+      async (error) => {
+        const prevRequest = error.config;
+        if (error.response?.status === 401 && !prevRequest._retry) {
+          prevRequest._retry = true; // Mark as retried to avoid infinite loops
+          try {
+            // Call the refresh token endpoint
+            const refreshResponse = await axiosInstance.get('/auth/refresh');
+            const newAccessToken = refreshResponse.data.token;
+
+            setToken(newAccessToken); // Update token in state
+            localStorage.setItem('token', newAccessToken); // Update token in local storage
+
+            // Update the Authorization header for the retried request
+            prevRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
+            return axiosInstance(prevRequest); // Retry the original request
+          } catch (refreshError: any) {
+            console.error('Failed to refresh token or refresh token invalid:', refreshError);
+            logout(); // Log out user if refresh fails
+            return Promise.reject(refreshError);
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    // Cleanup function for interceptors
+    return () => {
+      axiosInstance.interceptors.request.eject(requestInterceptor);
+      axiosInstance.interceptors.response.eject(responseInterceptor);
+    };
+  }, [token, logout]); // Depend on token and logout
+
+  // Existing fetchUserData remains mostly the same, but will use axiosInstance
   const fetchUserData = async (currentToken: string) => {
     try {
       const decodedToken: any = decodeToken(currentToken);
@@ -55,7 +110,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           _id: decodedToken.id,
           name: 'Authenticated User', // Placeholder, ideally fetch from backend
           email: 'authenticated@example.com', // Placeholder
-          role: decodedToken.role || 'user', // Use role from token, default to 'user'
+          role: decodedToken.role || 'user',
         });
         setIsLoading(false);
       } else {
@@ -87,10 +142,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-
+  // Adjust login and register to use axiosInstance
   const login = async (email: string, password: string) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+      const response = await axiosInstance.post('/auth/login', { email, password }); // Use axiosInstance
       const { token, _id, name, email: userEmail, role } = response.data;
       setToken(token);
       localStorage.setItem('token', token);
@@ -104,7 +159,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (name: string, email: string, password: string, role: string) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/register', { name, email, password, role });
+      const response = await axiosInstance.post('/auth/register', { name, email, password, role }); // Use axiosInstance
       const { token, _id, name: userName, email: userEmail, role: userRole } = response.data;
       setToken(token);
       localStorage.setItem('token', token);
@@ -116,16 +171,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
-    navigate('/login');
-  };
-
   const isAuthenticated = !!user && !!token;
 
+  // Initial token check on component mount
   useEffect(() => {
     const checkToken = () => {
       if (token) {
@@ -135,8 +183,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
     checkToken();
-  }, [token]);
-
+  }, [token, fetchUserData]); // Add fetchUserData to dependency array
 
   return (
     <AuthContext.Provider value={{ user, token, login, register, logout, isAuthenticated, isLoading }}>
