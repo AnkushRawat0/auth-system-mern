@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, type ReactNode, useCallback } from 'react'; // ADD useCallback
+import React, { createContext, useState, useEffect, useContext, type ReactNode, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -36,91 +36,63 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Helper function to set up Axios interceptors
+const setupAxiosInterceptors = (setToken: React.Dispatch<React.SetStateAction<string | null>>, logout: () => void) => {
+  let reqInterceptorId: number | null = null;
+  let resInterceptorId: number | null = null;
+
+  reqInterceptorId = axiosInstance.interceptors.request.use(
+    config => {
+      const currentToken = localStorage.getItem('token');
+      if (currentToken && !config.headers.Authorization) {
+        config.headers.Authorization = `Bearer ${currentToken}`;
+      }
+      return config;
+    },
+    error => Promise.reject(error)
+  );
+
+  resInterceptorId = axiosInstance.interceptors.response.use(
+    response => response,
+    async (error) => {
+      const prevRequest = error.config;
+      if (error.response?.status === 401 && !prevRequest._retry) {
+        prevRequest._retry = true;
+        try {
+          const refreshResponse = await axiosInstance.get('/auth/refresh');
+          const newAccessToken = refreshResponse.data.token;
+
+          setToken(newAccessToken);
+          localStorage.setItem('token', newAccessToken);
+
+          prevRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
+          return axiosInstance(prevRequest);
+        } catch (refreshError: any) {
+          console.error('Failed to refresh token or refresh token invalid:', refreshError);
+          logout();
+          return Promise.reject(refreshError);
+        }
+      }
+      return Promise.reject(error);
+    }
+  );
+
+  return () => {
+    if (reqInterceptorId !== null) {
+      axiosInstance.interceptors.request.eject(reqInterceptorId);
+    }
+    if (resInterceptorId !== null) {
+      axiosInstance.interceptors.response.eject(resInterceptorId);
+    }
+  };
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const navigate = useNavigate();
-
-  // Ensure logout is stable, or it will cause infinite re-renders of the useEffect above
-  // We'll wrap it in useCallback for this purpose.
-  const logout = useCallback(() => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    // axiosInstance.defaults.headers.common['Authorization'] = ''; // No longer needed due to interceptor
-    navigate('/login');
-  }, [setToken, setUser, navigate]);
-
-  // Set up Axios interceptors
-  useEffect(() => {
-    // This interceptor adds the access token to outgoing requests
-    const requestInterceptor = axiosInstance.interceptors.request.use(
-      config => {
-        if (token && !config.headers.Authorization) { // Only set if token exists and not already set
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-      },
-      error => Promise.reject(error)
-    );
-
-    // This interceptor handles 401 responses and attempts to refresh the token
-    const responseInterceptor = axiosInstance.interceptors.response.use(
-      response => response,
-      async (error) => {
-        const prevRequest = error.config;
-        if (error.response?.status === 401 && !prevRequest._retry) {
-          prevRequest._retry = true; // Mark as retried to avoid infinite loops
-          try {
-            // Call the refresh token endpoint
-            const refreshResponse = await axiosInstance.get('/auth/refresh');
-            const newAccessToken = refreshResponse.data.token;
-
-            setToken(newAccessToken); // Update token in state
-            localStorage.setItem('token', newAccessToken); // Update token in local storage
-
-            // Update the Authorization header for the retried request
-            prevRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-
-            return axiosInstance(prevRequest); // Retry the original request
-          } catch (refreshError: any) {
-            console.error('Failed to refresh token or refresh token invalid:', refreshError);
-            logout(); // Log out user if refresh fails
-            return Promise.reject(refreshError);
-          }
-        }
-        return Promise.reject(error);
-      }
-    );
-
-    // Cleanup function for interceptors
-    return () => {
-      axiosInstance.interceptors.request.eject(requestInterceptor);
-      axiosInstance.interceptors.response.eject(responseInterceptor);
-    };
-  }, [token, logout]); // Depend on token and logout
-
-  // Existing fetchUserData remains mostly the same, but will use axiosInstance
-  const fetchUserData = async (currentToken: string) => {
-    try {
-      const decodedToken: any = decodeToken(currentToken);
-      if (decodedToken && decodedToken.id) {
-        setUser({
-          _id: decodedToken.id,
-          name: 'Authenticated User', // Placeholder, ideally fetch from backend
-          email: 'authenticated@example.com', // Placeholder
-          role: decodedToken.role || 'user',
-        });
-        setIsLoading(false);
-      } else {
-        logout();
-      }
-    } catch (error) {
-      console.error('Failed to fetch user data:', error);
-      logout();
-    }
-  };
 
   // Improved JWT decode for client-side (still for display/convenience, not security-critical)
   const decodeToken = (jwtToken: string) => {
@@ -142,6 +114,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Ensure logout is stable, or it will cause infinite re-renders of the useEffect above
+  // We'll wrap it in useCallback for this purpose.
+  const logout = useCallback(() => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem('token');
+    navigate('/login');
+  }, [setToken, setUser, navigate]);
+
+  // Memoize fetchUserData to prevent infinite re-renders
+  const fetchUserData = useCallback(async (currentToken: string) => {
+    try {
+      const decodedToken: any = decodeToken(currentToken);
+      if (decodedToken && decodedToken.id) {
+        setUser({
+          _id: decodedToken.id,
+          name: 'Authenticated User', // Placeholder, ideally fetch from backend
+          email: 'authenticated@example.com', // Placeholder
+          role: decodedToken.role || 'user',
+        });
+        setIsLoading(false);
+      } else {
+        logout();
+      }
+    } catch (error) {
+      console.error('Failed to fetch user data:', error);
+      logout();
+    }
+  }, [setUser, setIsLoading, logout, decodeToken]); // Dependencies for useCallback
+
+  // Set up Axios interceptors once
+  useEffect(() => {
+    const cleanup = setupAxiosInterceptors(setToken, logout);
+    return cleanup;
+  }, [setToken, logout]);
+
+
   // Adjust login and register to use axiosInstance
   const login = async (email: string, password: string) => {
     try {
@@ -150,6 +159,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setToken(token);
       localStorage.setItem('token', token);
       setUser({ _id, name, email: userEmail, role });
+      setIsLoading(false);
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Login failed:', error.response?.data?.message || error.message);
@@ -164,6 +174,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setToken(token);
       localStorage.setItem('token', token);
       setUser({ _id, name: userName, email: userEmail, role: userRole });
+      setIsLoading(false);
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Registration failed:', error.response?.data?.message || error.message);
@@ -183,7 +194,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
     checkToken();
-  }, [token, fetchUserData]); // Add fetchUserData to dependency array
+  }, [token, fetchUserData]);
 
   return (
     <AuthContext.Provider value={{ user, token, login, register, logout, isAuthenticated, isLoading }}>

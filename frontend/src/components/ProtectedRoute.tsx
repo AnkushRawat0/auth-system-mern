@@ -1,8 +1,8 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import React from 'react';
+
 import { useAuth } from '../context/AuthContext';
 
-const ProtectedRoute = () => { // Removed React.FC
+const ProtectedRoute = () => { 
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
