@@ -1,12 +1,12 @@
 import User from "../models/User.js";
-import bycrypt from "bcryptjs";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import asynchandler from "express-async-handler";
 import crypto from "crypto"
 
 
 const generateToken = (id, role) => {
-  return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: "20s" });
+  return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: "15m" });
 };
 
 const generateRefreshToken =() =>{
@@ -35,8 +35,8 @@ export const registerUser = asynchandler(async (req, res) => {
     throw new Error("User already exists");
   }
 
-  const salt = await bycrypt.genSalt(10);
-  const hashedPassword = await bycrypt.hash(password, salt);
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
 
   const user = await User.create({
     name,

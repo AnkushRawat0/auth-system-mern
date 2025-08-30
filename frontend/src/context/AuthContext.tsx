@@ -1,13 +1,9 @@
-import React, { createContext, useState, useEffect, useContext, type ReactNode, useCallback } from 'react';
-import axios from 'axios';
+import React, { createContext, useState, useEffect, useContext, type ReactNode } from 'react';
+import axiosInstance from '../utils/axiosInstance';
 import { useNavigate } from 'react-router-dom';
 
-const axiosInstance = axios.create({
-  baseURL: 'http://localhost:5000/api',
-  withCredentials: true
-});
 
-export { axiosInstance }; // Export axiosInstance
+
 
 // Define the User type
 interface User {
@@ -26,6 +22,7 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   isLoading: boolean;
+  setToken: React.Dispatch<React.SetStateAction<string | null>>; // Added setToken to context
 }
 
 // Create the AuthContext
@@ -36,57 +33,7 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Helper function to set up Axios interceptors
-const setupAxiosInterceptors = (setToken: React.Dispatch<React.SetStateAction<string | null>>, logout: () => void) => {
-  let reqInterceptorId: number | null = null;
-  let resInterceptorId: number | null = null;
 
-  reqInterceptorId = axiosInstance.interceptors.request.use(
-    config => {
-      const currentToken = localStorage.getItem('token');
-      if (currentToken && !config.headers.Authorization) {
-        config.headers.Authorization = `Bearer ${currentToken}`;
-      }
-      return config;
-    },
-    error => Promise.reject(error)
-  );
-
-  resInterceptorId = axiosInstance.interceptors.response.use(
-    response => response,
-    async (error) => {
-      const prevRequest = error.config;
-      if (error.response?.status === 401 && !prevRequest._retry) {
-        prevRequest._retry = true;
-        try {
-          const refreshResponse = await axiosInstance.get('/auth/refresh');
-          const newAccessToken = refreshResponse.data.token;
-
-          setToken(newAccessToken);
-          localStorage.setItem('token', newAccessToken);
-
-          prevRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-
-          return axiosInstance(prevRequest);
-        } catch (refreshError: any) {
-          console.error('Failed to refresh token or refresh token invalid:', refreshError);
-          logout();
-          return Promise.reject(refreshError);
-        }
-      }
-      return Promise.reject(error);
-    }
-  );
-
-  return () => {
-    if (reqInterceptorId !== null) {
-      axiosInstance.interceptors.request.eject(reqInterceptorId);
-    }
-    if (resInterceptorId !== null) {
-      axiosInstance.interceptors.response.eject(resInterceptorId);
-    }
-  };
-};
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -94,7 +41,54 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const navigate = useNavigate();
 
-  // Improved JWT decode for client-side (still for display/convenience, not security-critical)
+  // Helper function for logout (will be called by context and interceptor)
+  const performLogout = async () => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem('token');
+    delete axiosInstance.defaults.headers.common['Authorization'];
+    try {
+      // Call backend to clear httpOnly refresh token cookie
+      await axiosInstance.post('/auth/logout');
+    } catch (error) {
+      console.error('Error clearing refresh token on backend:', error);
+    }
+    navigate('/login');
+  };
+
+  // fetchUserData remains the same, but now it uses the new performLogout
+  const fetchUserData = async (currentToken: string) => {
+    try {
+      const decodedToken: any = decodeToken(currentToken);
+      if (decodedToken && decodedToken.id) {
+        setUser({
+          _id: decodedToken.id,
+          name: 'Authenticated User', // Placeholder, ideally fetch from backend
+          email: 'authenticated@example.com', // Placeholder
+          role: decodedToken.role || 'user',
+        });
+        setIsLoading(false);
+      } else {
+        performLogout();
+      }
+    } catch (error) {
+      console.error('Failed to fetch user data:', error);
+      performLogout();
+    }
+  };
+
+  // Set default Axios headers for Authorization using axiosInstance
+  useEffect(() => {
+    if (token) {
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      fetchUserData(token);
+    } else {
+      delete axiosInstance.defaults.headers.common['Authorization'];
+      setUser(null);
+      setIsLoading(false);
+    }
+  }, [token, fetchUserData]);
+
   const decodeToken = (jwtToken: string) => {
     try {
       const parts = jwtToken.split('.');
@@ -114,52 +108,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Ensure logout is stable, or it will cause infinite re-renders of the useEffect above
-  // We'll wrap it in useCallback for this purpose.
-  const logout = useCallback(() => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    navigate('/login');
-  }, [setToken, setUser, navigate]);
 
-  // Memoize fetchUserData to prevent infinite re-renders
-  const fetchUserData = useCallback(async (currentToken: string) => {
-    try {
-      const decodedToken: any = decodeToken(currentToken);
-      if (decodedToken && decodedToken.id) {
-        setUser({
-          _id: decodedToken.id,
-          name: 'Authenticated User', // Placeholder, ideally fetch from backend
-          email: 'authenticated@example.com', // Placeholder
-          role: decodedToken.role || 'user',
-        });
-        setIsLoading(false);
-      } else {
-        logout();
-      }
-    } catch (error) {
-      console.error('Failed to fetch user data:', error);
-      logout();
-    }
-  }, [setUser, setIsLoading, logout, decodeToken]); // Dependencies for useCallback
-
-  // Set up Axios interceptors once
-  useEffect(() => {
-    const cleanup = setupAxiosInterceptors(setToken, logout);
-    return cleanup;
-  }, [setToken, logout]);
-
-
-  // Adjust login and register to use axiosInstance
   const login = async (email: string, password: string) => {
     try {
-      const response = await axiosInstance.post('/auth/login', { email, password }); // Use axiosInstance
-      const { token, _id, name, email: userEmail, role } = response.data;
-      setToken(token);
-      localStorage.setItem('token', token);
+      const response = await axiosInstance.post('/auth/login', { email, password });
+      const { token: newAccessToken, _id, name, email: userEmail, role } = response.data;
+      setToken(newAccessToken);
+      localStorage.setItem('token', newAccessToken);
       setUser({ _id, name, email: userEmail, role });
-      setIsLoading(false);
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Login failed:', error.response?.data?.message || error.message);
@@ -169,12 +125,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (name: string, email: string, password: string, role: string) => {
     try {
-      const response = await axiosInstance.post('/auth/register', { name, email, password, role }); // Use axiosInstance
-      const { token, _id, name: userName, email: userEmail, role: userRole } = response.data;
-      setToken(token);
-      localStorage.setItem('token', token);
+      const response = await axiosInstance.post('/auth/register', { name, email, password, role });
+      const { token: newAccessToken, _id, name: userName, email: userEmail, role: userRole } = response.data;
+      setToken(newAccessToken);
+      localStorage.setItem('token', newAccessToken);
       setUser({ _id, name: userName, email: userEmail, role: userRole });
-      setIsLoading(false);
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Registration failed:', error.response?.data?.message || error.message);
@@ -184,20 +139,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const isAuthenticated = !!user && !!token;
 
-  // Initial token check on component mount
-  useEffect(() => {
-    const checkToken = () => {
-      if (token) {
-        fetchUserData(token);
-      } else {
-        setIsLoading(false);
-      }
-    };
-    checkToken();
-  }, [token, fetchUserData]);
-
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, isAuthenticated, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout: performLogout, isAuthenticated, isLoading, setToken }}>
       {children}
     </AuthContext.Provider>
   );

@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.post("/register", registerUser);
 router.post("/login", loginUser);
-router.get("/refresh" , refreshAccessToken)
+router.post("/refresh-token" , refreshAccessToken)
 
 //example protected route 
 router.get("/profile", protect , (req,res)=>{
