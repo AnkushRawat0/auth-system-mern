@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create a new Axios instance
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:5000/api', 
+  baseURL:'http://localhost:5000/api', 
   withCredentials: true, // Crucial for sending cookies (httpOnly refresh token)
 });
 
