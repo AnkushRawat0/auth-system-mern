@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { axiosInstance } from "../context/AuthContext"; // Import axiosInstance
+import axiosInstance from "../utils/axiosInstance";
 
 interface ProtectedData{
     message:string;
@@ -62,7 +62,7 @@ const DashboardPage : React.FC = () =>{
 
       {content}
 
-      {/* Add more dashboard specific content here */}
+      {/* Admin navigation - only seen by admin users */}
     </div>
 
     )

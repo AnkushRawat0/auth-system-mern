@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, type ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useContext, type ReactNode, useCallback } from 'react';
 import axiosInstance from '../utils/axiosInstance';
 import { useNavigate } from 'react-router-dom';
 
@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const navigate = useNavigate();
 
   // Helper function for logout (will be called by context and interceptor)
-  const performLogout = async () => {
+  const performLogout =useCallback(async () => {
     setToken(null);
     setUser(null);
     localStorage.removeItem('token');
@@ -54,10 +54,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Error clearing refresh token on backend:', error);
     }
     navigate('/login');
-  };
+  }, [navigate]);
 
   // fetchUserData remains the same, but now it uses the new performLogout
-  const fetchUserData = async (currentToken: string) => {
+  const fetchUserData = useCallback (async (currentToken: string) => {
     try {
       const decodedToken: any = decodeToken(currentToken);
       if (decodedToken && decodedToken.id) {
@@ -75,7 +75,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Failed to fetch user data:', error);
       performLogout();
     }
-  };
+  },[performLogout]);
 
   // Set default Axios headers for Authorization using axiosInstance
   useEffect(() => {

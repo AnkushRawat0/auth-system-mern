@@ -12,6 +12,7 @@ import { useAuth } from './context/AuthContext';
 
 
 
+
 const AppRoutes: React.FC = () => {
   const { user } = useAuth();
   const userRole = user?.role;
@@ -23,10 +24,12 @@ const AppRoutes: React.FC = () => {
       <Route path="/register" element={<RegisterPage />} />
 
       {/* Protected Routes */}
-      <Route element={<ProtectedRoute />}>
+       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<DashboardPage />} />
-        {/* Example of role-based protection */}
-        {userRole === 'admin' && <Route path="/admin" element={<AdminPage />} />}
+        {/* Admin route - always render but protect with role check inside */}
+        <Route 
+          path="/admin" 
+          element={<AdminPage /> } />
       </Route>
 
       {/* Catch-all for undefined routes */}

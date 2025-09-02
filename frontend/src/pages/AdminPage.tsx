@@ -1,7 +1,7 @@
 // frontend/src/pages/AdminPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { axiosInstance } from "../context/AuthContext"; // Import axiosInstance
+import axiosInstance from '../utils/axiosInstance';
 
 interface AdminData {
   message: string;
