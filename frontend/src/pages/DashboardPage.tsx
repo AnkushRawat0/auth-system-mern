@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import axiosInstance from "../utils/axiosInstance";
+import { Link } from "react-router-dom";
 
 interface ProtectedData{
     message:string;
@@ -63,7 +64,15 @@ const DashboardPage : React.FC = () =>{
       {content}
 
       {/* Admin navigation - only seen by admin users */}
-    </div>
+
+      {user?.role === "admin" &&(
+        <div className="margin-top-lg">
+          <h3>Admin Access</h3>
+          <Link to="admin" className = "btn btn-secondary">Go to Admin Page</Link>
+     </div>
+      )}
+
+      </div>
 
     )
 
