@@ -68,10 +68,15 @@ const DashboardPage : React.FC = () =>{
       {user?.role === "admin" &&(
         <div className="margin-top-lg">
           <h3>Admin Access</h3>
-          <Link to="admin" className = "btn btn-secondary">Go to Admin Page</Link>
-     </div>
+          <Link to="/admin" className = "btn btn-secondary">Go to Admin Page</Link>
+           </div>
       )}
+      <br />
 
+           <Link to="/" className="btn btn-secondary ">
+       Go to Homepage
+      </Link>
+    
       </div>
 
     )
