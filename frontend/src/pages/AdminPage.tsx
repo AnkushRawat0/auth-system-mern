@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axiosInstance from '../utils/axiosInstance';
+import { Link } from 'react-router-dom';
 
 interface AdminData {
   message: string;
@@ -75,6 +76,9 @@ const AdminPage: React.FC = () => {
       {content}
 
       {/* Add more admin specific content here */}
+        <Link to="/" className="btn btn-secondary ">
+       Go to Homepage
+      </Link>
     </div>
   );
 };
